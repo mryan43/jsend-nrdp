@@ -2,8 +2,9 @@ package ch.shamu.jsendnrdp.impl;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -12,11 +13,14 @@ import javax.xml.parsers.SAXParserFactory;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,15 +93,14 @@ public class NagiosCheckSenderImpl implements NagiosCheckSender {
 
 		String xml = b.toString();
 
-		StringBuilder urlBuilder = new StringBuilder();
-		urlBuilder.append(server.getUrl());
-		urlBuilder.append("/?token=");
-		urlBuilder.append(server.getToken());
-		urlBuilder.append("&cmd=submitcheck&XMLDATA=");
-		urlBuilder.append(URLEncoder.encode(xml, "UTF-8")); // encoding of rfc3986 is used
+		List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+		postParams.add(new BasicNameValuePair("token", server.getToken()));
+		postParams.add(new BasicNameValuePair("cmd", "submitcheck"));
+		postParams.add(new BasicNameValuePair("XMLDATA", xml));
 
-		// attempt to send the message to NRDP, using the HTTPClient
-		HttpPost request = new HttpPost(urlBuilder.toString());
+		// attempt to POST the message to NRDP, using the HTTPClient
+		HttpPost request = new HttpPost(server.getUrl());
+		request.setEntity(new UrlEncodedFormEntity(postParams));
 		HttpResponse response = httpClient.execute(request); // eventual IO exceptions are allowed to bubble up from here
 		HttpEntity entity = response.getEntity();
 		String responseString = EntityUtils.toString(entity, "UTF-8");
@@ -155,6 +158,9 @@ public class NagiosCheckSenderImpl implements NagiosCheckSender {
 		};
 
 		saxParser.parse(new InputSource(new StringReader(xml)), handler);
+		if (res.getStatus() == null || res.getMessage() == null) {
+			throw new SAXException("Failed to get response status and message");
+		}
 		return res;
 	}
 }

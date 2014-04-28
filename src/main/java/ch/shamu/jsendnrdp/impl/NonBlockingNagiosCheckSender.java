@@ -49,6 +49,7 @@ public class NonBlockingNagiosCheckSender implements NagiosCheckSender {
 			private int count = 0;
 
 			public Thread newThread(Runnable r) {
+				// pretty naming of threads
 				return new Thread(r, "nrdp-sender" + "-" + count++);
 			}
 		});
@@ -58,8 +59,8 @@ public class NonBlockingNagiosCheckSender implements NagiosCheckSender {
 	public void send(Collection<NagiosCheckResult> checkResults) throws NRDPException, IOException {
 		// artificially put a boundary on the executor queue.
 		if (executor.getQueue().size() >= maxQueueSize) {
-			throw new IOException("Max nagios check result to send queue size (" + maxQueueSize
-					+ ") reached, check result could not be submitted");
+			throw new IOException("Nagios check result could not be submitted : maximum number of queued results to send reached ("
+					+ maxQueueSize + ")");
 		}
 		executor.execute(new NonBlockingSender(checkResults));
 	}

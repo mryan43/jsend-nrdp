@@ -36,8 +36,6 @@ import ch.shamu.jsendnrdp.domain.CheckSubmissionResult;
 import ch.shamu.jsendnrdp.domain.NagiosCheckResult;
 
 /**
- * {@inheritDoc}
- * 
  * <pre>
  * In this implementation, calls to the send method waits for the NRDP server's response before returning.
  * However, concurrent calls to the send method do send http requests in parallel.

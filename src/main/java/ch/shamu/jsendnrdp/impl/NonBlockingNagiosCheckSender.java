@@ -15,8 +15,6 @@ import ch.shamu.jsendnrdp.NagiosCheckSender;
 import ch.shamu.jsendnrdp.domain.NagiosCheckResult;
 
 /**
- * {@inheritDoc}
- * 
  * <pre>
  * This implementation uses a job queue of alerts to send. 
  * A ThreadPoolExecutor then sends the alerts from this queue. 

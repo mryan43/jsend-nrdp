@@ -57,7 +57,8 @@ public class NagiosCheckSenderImpl implements NagiosCheckSender {
 				.setConnectTimeout(server.getTimeout()).build();
 		httpClient = HttpClients.custom()//
 				.setDefaultRequestConfig(requestConfig)//
-				.setConnectionManager(connectionManager).build();
+				.setConnectionManager(connectionManager)//
+				.build();
 	}
 
 	public void send(Collection<NagiosCheckResult> results) throws NRDPException, IOException {

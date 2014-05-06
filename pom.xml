@@ -1,14 +1,13 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.shamu</groupId>
 	<artifactId>jsend-nrdp</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<packaging>jar</packaging>
 	<name>jsend-nrdp</name>
 	<description>A library to submit nagios check results (passive checks) using nrdp</description>
 	<url>http://github.com/m-ryan/jsend-nrdp</url>
-	<licenses></licenses>
+	<licenses />
 	<scm>
 		<url>http://github.com/m-ryan/jsend-nrdp.git</url>
 		<connection>scm:git:http://github.com/m-ryan/jsend-nrdp.git</connection>

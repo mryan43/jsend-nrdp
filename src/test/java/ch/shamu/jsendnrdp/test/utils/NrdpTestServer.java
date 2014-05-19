@@ -1,6 +1,8 @@
 package ch.shamu.jsendnrdp.test.utils;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -13,6 +15,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Ignore;
+
+import com.google.common.collect.Lists;
 
 @Ignore
 public class NrdpTestServer {
@@ -28,6 +32,7 @@ public class NrdpTestServer {
 	private String mockResponseData;
 	private int delay = 0;
 	private boolean responseReceived = false;
+	private int nbResponseReceived = 0;
 
 	public NrdpTestServer(int httpPort) {
 		this.httpPort = httpPort;
@@ -56,12 +61,19 @@ public class NrdpTestServer {
 
 			public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
 					ServletException {
+
 				try {
 					Thread.sleep(getDelay());
 				}
 				catch (InterruptedException e) {
 					e.printStackTrace();
 				}
+
+				synchronized (this) { // requests are processed in parallel in this test server, so we need to synchronize this
+					setNbResponsesReceived(getNbResponsesReceived() + 1);
+				}
+
+				registerRequestForRate();
 				setTarget(target);
 				setXmlData(request.getParameter("XMLDATA"));
 				setCmd(request.getParameter("cmd"));
@@ -73,10 +85,38 @@ public class NrdpTestServer {
 				response.getWriter().write(getResponseBody());
 				baseRequest.setHandled(true);
 				setResponseReceived(true);
+
 			}
 		};
 
 		return handler;
+	}
+
+	// returns the number of requests received in the last second
+	public int getRequestRate() {
+
+		// clear too old requests
+		Iterator<Long> i = lastSecondRequestsTimestamps.iterator();
+		while (i.hasNext()) {
+			if (i.next() <= System.currentTimeMillis() - 1000) {
+				synchronized (this) {
+					i.remove();
+				}
+			}
+		}
+		return lastSecondRequestsTimestamps.size();
+	}
+
+	private List<Long> lastSecondRequestsTimestamps = Lists.newArrayList();
+
+	public void registerRequestForRate() {
+		synchronized (this) {
+			lastSecondRequestsTimestamps.add(System.currentTimeMillis());
+		}
+	}
+
+	public int getNbResponsesReceived() {
+		return nbResponseReceived;
 	}
 
 	public void stop() throws Exception {
@@ -157,6 +197,10 @@ public class NrdpTestServer {
 
 	public void setResponseReceived(boolean responseReceived) {
 		this.responseReceived = responseReceived;
+	}
+
+	public void setNbResponsesReceived(int i) {
+		this.nbResponseReceived = i;
 	}
 
 }

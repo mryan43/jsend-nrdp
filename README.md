@@ -1,7 +1,7 @@
 jsend-nrdp
 ==========
 
-jsend-nrdp is a java library for submitting Nagios passive check results to a remote NRPD server.
+jsend-nrdp is a java library for submitting Nagios passive check results to a remote NRDP server.
 
 Maven
 =====

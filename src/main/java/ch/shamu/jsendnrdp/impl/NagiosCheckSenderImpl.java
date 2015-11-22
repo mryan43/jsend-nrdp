@@ -65,64 +65,77 @@ public class NagiosCheckSenderImpl implements NagiosCheckSender {
 
 		// build XML
 		StringBuilder b = new StringBuilder();
+                boolean ok = false;
 
-		b.append("<?xml version='1.0'?>\n");
-		b.append("  <checkresults>\n");
-		for (NagiosCheckResult r : results) {
-			b.append("    <checkresult type='service' checktype='");
-			b.append(NagiosCheckResult.PASSIVE_CHECK_TYPE);
-			b.append("'>\n");
-			b.append("      <hostname>");
-			b.append(StringEscapeUtils.escapeXml(r.getHost()));
-			b.append("</hostname>\n");
-			b.append("      <servicename>");
-			b.append(StringEscapeUtils.escapeXml(r.getService()));
-			b.append("</servicename>\n");
-			b.append("      <state>");
-			b.append(r.getState().getCode());
-			b.append("</state>\n");
-			b.append("      <output>");
-			b.append(StringEscapeUtils.escapeXml(r.getMessage()));
-			b.append("</output>\n");
-			b.append("    </checkresult>\n");
-			logger.info("Nagios check results to be sent {hostname:" + r.getHost() + ",servicename:" + r.getService() + ",state:" + r.getState()
+                try {
+
+			b.append("<?xml version='1.0'?>\n");
+			b.append("  <checkresults>\n");
+			for (NagiosCheckResult r : results) {
+				b.append("    <checkresult type='service' checktype='");
+				b.append(NagiosCheckResult.PASSIVE_CHECK_TYPE);
+				b.append("'>\n");
+				b.append("      <hostname>");
+				b.append(StringEscapeUtils.escapeXml(r.getHost()));
+				b.append("</hostname>\n");
+				b.append("      <servicename>");
+				b.append(StringEscapeUtils.escapeXml(r.getService()));
+				b.append("</servicename>\n");
+				b.append("      <state>");
+				b.append(r.getState().getCode());
+				b.append("</state>\n");
+				b.append("      <output>");
+				b.append(StringEscapeUtils.escapeXml(r.getMessage()));
+				b.append("</output>\n");
+				b.append("    </checkresult>\n");
+				logger.info("Nagios check results to be sent {hostname:" + r.getHost() + ",servicename:" + r.getService() + ",state:" + r.getState()
 					+ ",message:" + r.getMessage() + "}");
+			}
+			b.append("  </checkresults>\n");
+
+			String xml = b.toString();
+
+			List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+			postParams.add(new BasicNameValuePair("token", server.getToken()));
+			postParams.add(new BasicNameValuePair("cmd", "submitcheck"));
+			postParams.add(new BasicNameValuePair("XMLDATA", xml));
+	
+			// attempt to POST the message to NRDP, using the HTTPClient
+			HttpPost request = new HttpPost(server.getUrl());
+			request.setEntity(new UrlEncodedFormEntity(postParams));
+			HttpResponse response = httpClient.execute(request); // eventual IO exceptions are allowed to bubble up from here
+			HttpEntity entity = response.getEntity();
+			String responseString = EntityUtils.toString(entity, "UTF-8");
+
+			// Treat the response
+			CheckSubmissionResult result;
+
+			try {
+				result = parseResponseXML(responseString);
+			}
+			catch (Exception e) {
+				throw new NRDPException("Failed to parse http response body from NRDP server (should be XML) : " + responseString, e);
+			}
+	
+			if (!result.getStatus().equals("0")) {
+				throw new NRDPException("NRDP server returned with code " + result.getStatus() + " and message " + result.getMessage());
+			}
+
+			ok = true;
+	
+			logger.info(results.size() + " check results succesfully sent to Nagios");
+
+		} finally {
+			for (NagiosCheckResult r : results) {
+				try {
+					if (ok) {
+						r.afterSend();
+					} else {
+						r.afterFail();
+                                	}
+				} catch (Throwable ignored) {}
+			}
 		}
-		b.append("  </checkresults>\n");
-
-		String xml = b.toString();
-
-		List<NameValuePair> postParams = new ArrayList<NameValuePair>();
-		postParams.add(new BasicNameValuePair("token", server.getToken()));
-		postParams.add(new BasicNameValuePair("cmd", "submitcheck"));
-		postParams.add(new BasicNameValuePair("XMLDATA", xml));
-
-		// attempt to POST the message to NRDP, using the HTTPClient
-		HttpPost request = new HttpPost(server.getUrl());
-		request.setEntity(new UrlEncodedFormEntity(postParams));
-		HttpResponse response = httpClient.execute(request); // eventual IO exceptions are allowed to bubble up from here
-		HttpEntity entity = response.getEntity();
-		String responseString = EntityUtils.toString(entity, "UTF-8");
-
-		// Treat the response
-		CheckSubmissionResult result;
-
-		try {
-			result = parseResponseXML(responseString);
-		}
-		catch (Exception e) {
-			throw new NRDPException("Failed to parse http response body from NRDP server (should be XML) : " + responseString, e);
-		}
-
-		if (!result.getStatus().equals("0")) {
-			throw new NRDPException("NRDP server returned with code " + result.getStatus() + " and message " + result.getMessage());
-		}
-
-		logger.info(results.size() + " check results succesfully sent to Nagios");
-
-                for (NagiosCheckResult r : results) {
-                    r.afterSend();
-                }
 
 	}
 

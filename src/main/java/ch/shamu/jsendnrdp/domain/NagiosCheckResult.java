@@ -51,4 +51,11 @@ public class NagiosCheckResult {
          */
         public void afterSend() {}
 
+        /**
+         * This method is invoked if sending has failed.
+         * Can be overridden by the caller and serve
+         * as notification mechanism.
+         */
+        public void afterFail() {}
+
 }

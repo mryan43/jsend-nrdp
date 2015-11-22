@@ -90,6 +90,14 @@ public class NonBlockingNagiosCheckSender implements NagiosCheckSender {
 		executor.execute(new NonBlockingSender(checkResults));
 	}
 
+        /**
+         * Shuts down the underlying executor. No new results should be sent
+         * through this sender after this method is invoked.
+         */
+        public void shutdown() {
+            executor.shutdown();
+        }
+
 	private class NonBlockingSender implements Runnable {
 
 		private Collection<NagiosCheckResult> results;

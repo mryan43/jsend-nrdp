@@ -39,8 +39,12 @@ public class NagiosCheckSenderTest {
 	@Test
 	public void testSendOneResultSuccess() throws NRDPException, IOException {
 
+                final boolean [] successFlag = new boolean[1];
+
 		// prepare client request
-		NagiosCheckResult resultToSend = new NagiosCheckResult("localhost", "prout", State.CRITICAL, "testPayload");
+		NagiosCheckResult resultToSend = new NagiosCheckResult("localhost", "prout", State.CRITICAL, "testPayload") {
+			public void afterSend() { successFlag[0] = true; }
+		};
 		Collection<NagiosCheckResult> resultsToSend = new ArrayList<NagiosCheckResult>();
 		resultsToSend.add(resultToSend);
 
@@ -73,6 +77,7 @@ public class NagiosCheckSenderTest {
 		Assert.assertEquals(requestXML, testServer.getXmlData());
 		Assert.assertEquals("submitcheck", testServer.getCmd());
 		Assert.assertEquals("sq", testServer.getToken());
+		Assert.assertTrue("afterSend flag", successFlag[0]);
 
 	}
 

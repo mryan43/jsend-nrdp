@@ -119,6 +119,11 @@ public class NagiosCheckSenderImpl implements NagiosCheckSender {
 		}
 
 		logger.info(results.size() + " check results succesfully sent to Nagios");
+
+                for (NagiosCheckResult r : results) {
+                    r.afterSend();
+                }
+
 	}
 
 	private CheckSubmissionResult parseResponseXML(String xml) throws ParserConfigurationException, SAXException, IOException {

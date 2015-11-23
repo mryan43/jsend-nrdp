@@ -79,11 +79,11 @@ public class NonBlockingNagiosCheckSender implements NagiosCheckSender {
 	/**
 	 * Bean that knows how to send nagios alerts in a non blocking way, has configurable concurrency level and supports throttling
 	 * @param server is the nrdp server connection settings
-	 * @param nbThreads is the number of worker threads for sending nagios alerts (concurrency level)
 	 * @param maxQueueSize is the maximum number of queued jobs before starting rejecting new job requests (IOException) (0 -> queue jobs until
 	 *            OutOfMemory, please don't...) jobs currently in execution are not taken into account when computing queue size.
 	 * @param maxRequestRate throttling of requests sent to the server, it's the maximum number of requests send to the server per second (0 ->
 	 *            unlimited). The jobs currently in execution will block in order to respect this rate.
+         * @param executor executor to use for sending the checks
 	 */
         public NonBlockingNagiosCheckSender(NRDPServerConnectionSettings server, int maxQueueSize, 
                     double maxRequestsPerSeconds, ThreadPoolExecutor executor) {
@@ -101,6 +101,12 @@ public class NonBlockingNagiosCheckSender implements NagiosCheckSender {
                 this.maxQueueSize = maxQueueSize;
         }
 
+        /**
+         * Send the check results asynchronously, and return a future.
+         * The <code>send()</code> method will also send the results asynchronously,
+         * but doesn't return a Future object that can be used to manipulate or
+         * query the execution of the actual sending process
+         */
 	public Future sendAsync(Collection<NagiosCheckResult> checkResults) throws NRDPException, IOException {
 		// deal with binding of the queue
 		if (maxQueueSize > 0 && executor.getQueue().size() >= maxQueueSize) {

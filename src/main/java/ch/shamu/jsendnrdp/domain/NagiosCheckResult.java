@@ -43,19 +43,4 @@ public class NagiosCheckResult {
 		return state;
 	}
 
-        /**
-         * This method is invoked after confirming
-         * that the check result is submitted to NRDP.
-         * Can be overridden by the caller and serve
-         * as notification mechanism.
-         */
-        public void afterSend() {}
-
-        /**
-         * This method is invoked if sending has failed.
-         * Can be overridden by the caller and serve
-         * as notification mechanism.
-         */
-        public void afterFail() {}
-
 }

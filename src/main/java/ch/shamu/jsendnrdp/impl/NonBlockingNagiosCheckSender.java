@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,33 +63,56 @@ public class NonBlockingNagiosCheckSender implements NagiosCheckSender {
 	 *            unlimited). The jobs currently in execution will block in order to respect this rate.
 	 */
 	public NonBlockingNagiosCheckSender(NRDPServerConnectionSettings server, int nbThreads, int maxQueueSize, double maxRequestsPerSeconds) {
-		this.sender = new NagiosCheckSenderImpl(server);
 
-		this.executor = new ScheduledThreadPoolExecutor(nbThreads, new ThreadFactory() {
+		this(server, maxQueueSize, maxRequestsPerSeconds,
+                        new ScheduledThreadPoolExecutor(nbThreads, new ThreadFactory() {
 			private int count = 0;
 
 			public Thread newThread(Runnable r) {
 				// pretty naming of threads
 				return new Thread(r, "nrdp-sender" + "-" + count++);
 			}
-		});
-		this.maxQueueSize = maxQueueSize;
+		}));
+
+	}
+
+	/**
+	 * Bean that knows how to send nagios alerts in a non blocking way, has configurable concurrency level and supports throttling
+	 * @param server is the nrdp server connection settings
+	 * @param nbThreads is the number of worker threads for sending nagios alerts (concurrency level)
+	 * @param maxQueueSize is the maximum number of queued jobs before starting rejecting new job requests (IOException) (0 -> queue jobs until
+	 *            OutOfMemory, please don't...) jobs currently in execution are not taken into account when computing queue size.
+	 * @param maxRequestRate throttling of requests sent to the server, it's the maximum number of requests send to the server per second (0 ->
+	 *            unlimited). The jobs currently in execution will block in order to respect this rate.
+	 */
+        public NonBlockingNagiosCheckSender(NRDPServerConnectionSettings server, int maxQueueSize, 
+                    double maxRequestsPerSeconds, ThreadPoolExecutor executor) {
+
+		this.sender = new NagiosCheckSenderImpl(server);
+
+                this.executor = executor;
+
 		if (maxRequestsPerSeconds == 0d) {
 			this.rateLimiter = RateLimiter.create(Double.MAX_VALUE); // FIRE AT WILL !
 		} else {
 			this.rateLimiter = RateLimiter.create(maxRequestsPerSeconds);
 		}
 
-	}
+                this.maxQueueSize = maxQueueSize;
+        }
 
-	public void send(Collection<NagiosCheckResult> checkResults) throws NRDPException, IOException {
+	public Future sendAsync(Collection<NagiosCheckResult> checkResults) throws NRDPException, IOException {
 		// deal with binding of the queue
 		if (maxQueueSize > 0 && executor.getQueue().size() >= maxQueueSize) {
 			throw new IOException("Nagios check result could not be submitted : maximum number of queued results to send reached ("
 					+ maxQueueSize + ")");
 		}
-		executor.execute(new NonBlockingSender(checkResults));
+		return executor.submit(new NonBlockingSender(checkResults, sender, rateLimiter));
 	}
+
+        public void send(Collection<NagiosCheckResult> checkResults) throws NRDPException, IOException {
+            sendAsync(checkResults);
+        }
 
         /**
          * Shuts down the underlying executor. No new results should be sent
@@ -97,27 +121,5 @@ public class NonBlockingNagiosCheckSender implements NagiosCheckSender {
         public void shutdown() {
             executor.shutdown();
         }
-
-	private class NonBlockingSender implements Runnable {
-
-		private Collection<NagiosCheckResult> results;
-
-		public NonBlockingSender(Collection<NagiosCheckResult> results) {
-			this.results = results;
-		}
-
-		public void run() {
-			try {
-				double waitTime = rateLimiter.acquire(); // Eventually wait because of throttling
-				if (waitTime > 0) {
-					logger.debug("job throttling wait : {}", waitTime);
-				}
-				sender.send(results);
-			}
-			catch (Exception e) {
-				logger.error("Problem sending nagios check result to NRDP server: ", e);
-			}
-		}
-	}
 
 }

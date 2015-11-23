@@ -39,12 +39,8 @@ public class NagiosCheckSenderTest {
 	@Test
 	public void testSendOneResultSuccess() throws NRDPException, IOException {
 
-		final boolean [] successFlag = new boolean[1];
-
 		// prepare client request
-		NagiosCheckResult resultToSend = new NagiosCheckResult("localhost", "prout", State.CRITICAL, "testPayload") {
-			public void afterSend() { successFlag[0] = true; }
-		};
+		NagiosCheckResult resultToSend = new NagiosCheckResult("localhost", "prout", State.CRITICAL, "testPayload");
 		Collection<NagiosCheckResult> resultsToSend = new ArrayList<NagiosCheckResult>();
 		resultsToSend.add(resultToSend);
 
@@ -77,7 +73,6 @@ public class NagiosCheckSenderTest {
 		Assert.assertEquals(requestXML, testServer.getXmlData());
 		Assert.assertEquals("submitcheck", testServer.getCmd());
 		Assert.assertEquals("sq", testServer.getToken());
-		Assert.assertTrue("afterSend flag", successFlag[0]);
 
 	}
 
@@ -132,12 +127,8 @@ public class NagiosCheckSenderTest {
 	@Test(expected = NRDPException.class)
 	public void testSendWrongToken() throws NRDPException, IOException {
 
-		final boolean [] failedFlag = new boolean[1];
-
 		// prepare client request
-		NagiosCheckResult resultToSend = new NagiosCheckResult("localhost", "testSendFail", State.CRITICAL, "testPayload") {
-			public void afterFail() { failedFlag[0] = true; }
-		};
+		NagiosCheckResult resultToSend = new NagiosCheckResult("localhost", "prout", State.CRITICAL, "testPayload");
 		Collection<NagiosCheckResult> resultsToSend = new ArrayList<NagiosCheckResult>();
 		resultsToSend.add(resultToSend);
 
@@ -150,12 +141,7 @@ public class NagiosCheckSenderTest {
 
 		testServer.setMockResponseData(response);
 
-		try {
-			sender.send(resultsToSend);
-		} finally {
-			Assert.assertTrue("afterFail flag", failedFlag[0]);
-		}
-
+		sender.send(resultsToSend);
 
 	}
 

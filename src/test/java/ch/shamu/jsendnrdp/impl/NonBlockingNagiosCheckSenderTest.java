@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -51,8 +52,8 @@ public class NonBlockingNagiosCheckSenderTest {
 	}
 
 	@Test
-	public void testNonBlockingSendSuccess() throws NRDPException, IOException, TimeoutException {
-		NagiosCheckSender sender = new NonBlockingNagiosCheckSender(defaultSettings, NB_THREADS, SEND_QUEUE_SIZE, MAX_REQUESTS_PER_SECONDS);
+	public void testNonBlockingSendSuccess() throws NRDPException, IOException, TimeoutException, InterruptedException, ExecutionException {
+		NonBlockingNagiosCheckSender sender = new NonBlockingNagiosCheckSender(defaultSettings, NB_THREADS, SEND_QUEUE_SIZE, MAX_REQUESTS_PER_SECONDS);
 
 		// prepare client request
 		NagiosCheckResult resultToSend = new NagiosCheckResult("localhost", "prout", State.CRITICAL, "testPayload");
@@ -90,6 +91,10 @@ public class NonBlockingNagiosCheckSenderTest {
 		Assert.assertEquals(requestXML, testServer.getXmlData());
 		Assert.assertEquals("submitcheck", testServer.getCmd());
 		Assert.assertEquals("sq", testServer.getToken());
+
+                // test Future
+
+                sender.sendAsync(resultsToSend).get();
 
 	}
 

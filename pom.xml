@@ -6,12 +6,12 @@
 	<packaging>jar</packaging>
 	<name>jsend-nrdp</name>
 	<description>A library to submit nagios check results (passive checks) using nrdp</description>
-	<url>http://github.com/m-ryan/jsend-nrdp</url>
+	<url>http://github.com/mryan43/jsend-nrdp</url>
 	<licenses />
 	<scm>
-		<url>http://github.com/m-ryan/jsend-nrdp.git</url>
-		<connection>scm:git:http://github.com/m-ryan/jsend-nrdp.git</connection>
-		<developerConnection>scm:git:http://github.com/m-ryan/jsend-nrdp.git</developerConnection>
+		<url>http://github.com/mryan43/jsend-nrdp.git</url>
+		<connection>scm:git:http://github.com/mryan43/jsend-nrdp.git</connection>
+		<developerConnection>scm:git:http://github.com/mryan43/jsend-nrdp.git</developerConnection>
 	</scm>
 	<developers>
 		<developer>

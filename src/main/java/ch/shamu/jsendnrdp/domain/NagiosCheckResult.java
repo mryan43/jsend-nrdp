@@ -16,6 +16,7 @@ public class NagiosCheckResult {
 
 	/**
 	 * Instantiate a Nagios check result
+	 * @param host is the host in Nagios
 	 * @param service is the id of the service in Nagios
 	 * @param state is the computed {@link ch.shamu.jsendnrdp.domain.State} of the check
 	 * @param message is a free text to send to Nagios to describe the result of the check (supports multiple lines)

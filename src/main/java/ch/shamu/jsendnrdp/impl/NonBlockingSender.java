@@ -1,6 +1,9 @@
 package ch.shamu.jsendnrdp.impl;
 
+import java.io.IOException;
+
 import java.util.Collection;
+import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.RateLimiter;
 
 import ch.shamu.jsendnrdp.NagiosCheckSender;
+import ch.shamu.jsendnrdp.NRDPException;
 import ch.shamu.jsendnrdp.domain.NagiosCheckResult;
 
 /**
@@ -15,7 +19,7 @@ import ch.shamu.jsendnrdp.domain.NagiosCheckResult;
  * by a non-blocking threads. The caller may get access to these
  * instances when using a custom executor.
  */
-public class NonBlockingSender implements Runnable {
+public class NonBlockingSender implements Callable<Collection<NagiosCheckResult>> {
 
 	private final static Logger logger = LoggerFactory.getLogger(NonBlockingSender.class);
 
@@ -29,16 +33,24 @@ public class NonBlockingSender implements Runnable {
 		this.rateLimiter = rateLimiter;
 	}
 
-	public void run() {
+	public Collection<NagiosCheckResult> call() {
 		try {
 			double waitTime = rateLimiter.acquire(); // Eventually wait because of throttling
 			if (waitTime > 0) {
 				logger.debug("job throttling wait : {}", waitTime);
 			}
 			sender.send(results);
+                        return results;
 		}
-		catch (Exception e) {
+		catch (Throwable e) {
 			logger.error("Problem sending nagios check result to NRDP server: ", e);
+                        if (e instanceof RuntimeException) {
+                            throw (RuntimeException)e;
+                        } else if (e instanceof Error) {
+                            throw (Error)e;
+                        } else {
+                            throw new RuntimeException(e);
+                        }
 		}
 	}
 

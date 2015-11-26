@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.shamu</groupId>
 	<artifactId>jsend-nrdp</artifactId>
-	<version>1.0.3-SNAPSHOT</version>
+	<version>1.0.3</version>
 	<packaging>jar</packaging>
 	<name>jsend-nrdp</name>
 	<description>A library to submit nagios check results (passive checks) using nrdp</description>

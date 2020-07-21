@@ -1,12 +1,15 @@
 package ch.shamu.jsendnrdp.impl;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.ExecutionException;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -52,8 +55,9 @@ public class NonBlockingNagiosCheckSenderTest {
 	}
 
 	@Test
-	public void testNonBlockingSendSuccess() throws NRDPException, IOException, TimeoutException, InterruptedException, ExecutionException {
-		NonBlockingNagiosCheckSender sender = new NonBlockingNagiosCheckSender(defaultSettings, NB_THREADS, SEND_QUEUE_SIZE, MAX_REQUESTS_PER_SECONDS);
+	public void testNonBlockingSendSuccess() throws IOException, TimeoutException {
+		NonBlockingNagiosCheckSender sender =
+				new NonBlockingNagiosCheckSender(defaultSettings, NB_THREADS, SEND_QUEUE_SIZE, MAX_REQUESTS_PER_SECONDS);
 
 		// prepare client request
 		NagiosCheckResult resultToSend = new NagiosCheckResult("localhost", "prout", State.CRITICAL, "testPayload");
@@ -65,7 +69,7 @@ public class NonBlockingNagiosCheckSenderTest {
 		// since the send process is non-blocking, we check the server state every 10 ms to see if the request arrived (for 2 seconds max)
 		long startTime = System.currentTimeMillis();
 		testServer.setResponseReceived(false);
-		while (testServer.isResponseReceived() == false) {
+		while (!testServer.isResponseReceived()) {
 			try {
 				Thread.sleep(10);
 			}
@@ -92,9 +96,15 @@ public class NonBlockingNagiosCheckSenderTest {
 		Assert.assertEquals("submitcheck", testServer.getCmd());
 		Assert.assertEquals("sq", testServer.getToken());
 
-                // test Future
+		// test Future
 
-                sender.sendAsync(resultsToSend).get();
+		CompletableFuture<Object> future = sender.sendAsync(resultsToSend).handle((result, exception) -> {
+			assertNull(exception);
+			assertEquals(result, resultsToSend);
+			return null;
+		});
+
+		future.join();
 
 	}
 
@@ -112,6 +122,29 @@ public class NonBlockingNagiosCheckSenderTest {
 		for (int i = 0; i < 100; i++) {
 			sender.send(resultsToSend);
 		}
+	}
+
+	@Test
+	public void testNonBlockingErrorHandling() throws IOException {
+		NonBlockingNagiosCheckSender sender =
+				new NonBlockingNagiosCheckSender(defaultSettings, NB_THREADS, SEND_QUEUE_SIZE, MAX_REQUESTS_PER_SECONDS);
+
+		// prepare client request
+		NagiosCheckResult resultToSend = new NagiosCheckResult("localhost", "prout", State.CRITICAL, "testPayload");
+		Collection<NagiosCheckResult> resultsToSend = new ArrayList<NagiosCheckResult>();
+		resultsToSend.add(resultToSend);
+
+		String prevMockResponseData = testServer.getMockResponseData();
+		testServer.setMockResponseData("Cannot be parsed :/");
+
+		CompletableFuture<Collection<NagiosCheckResult>> future = sender.sendAsync(resultsToSend).handle((result, exception) -> {
+			assertNotNull(exception);
+			assertEquals(exception.getMessage(), "Failed to parse http response body from NRDP server (should be XML) : Cannot be parsed :/");
+			return null;
+		});
+		future.join();
+		testServer.setMockResponseData(prevMockResponseData);
+		sender.shutdown();
 	}
 
 	@Test

@@ -21,7 +21,7 @@ import com.google.common.collect.Lists;
 @Ignore
 public class NrdpTestServer {
 
-	private int httpPort;
+	private final int httpPort;
 	private String target;
 	private Server server;
 	private String responseBody;
@@ -54,6 +54,7 @@ public class NrdpTestServer {
 
 	/**
 	 * Creates an {@link AbstractHandler handler} returning an arbitrary String as a response.
+	 *
 	 * @return never <code>null</code>.
 	 */
 	public Handler getMockHandler() {

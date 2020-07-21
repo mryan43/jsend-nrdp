@@ -17,4 +17,9 @@ public interface NagiosCheckSender {
 	 * @throws IOException thrown if I/O error occurs while trying to establish connection with nagios host
 	 */
 	void send(Collection<NagiosCheckResult> checkResults) throws NRDPException, IOException;
+
+	/**
+	 * Dispose of any resources used by this sender
+	 */
+	void shutdown();
 }

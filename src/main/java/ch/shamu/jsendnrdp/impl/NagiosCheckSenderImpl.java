@@ -2,6 +2,7 @@ package ch.shamu.jsendnrdp.impl;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -14,10 +15,10 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
@@ -46,7 +47,7 @@ public class NagiosCheckSenderImpl implements NagiosCheckSender {
 	private final static Logger logger = LoggerFactory.getLogger(NagiosCheckSenderImpl.class);
 
 	private final NRDPServerConnectionSettings server;
-	private HttpClient httpClient;
+	private final CloseableHttpClient httpClient;
 
 	public NagiosCheckSenderImpl(NRDPServerConnectionSettings server) {
 		this.server = server;
@@ -133,7 +134,7 @@ public class NagiosCheckSenderImpl implements NagiosCheckSender {
 			boolean messageTag = false;
 
 			@Override
-			public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+			public void startElement(String uri, String localName, String qName, Attributes attributes) {
 				if (qName.equalsIgnoreCase("status")) {
 					statusTag = true;
 				}
@@ -143,7 +144,7 @@ public class NagiosCheckSenderImpl implements NagiosCheckSender {
 			}
 
 			@Override
-			public void characters(char[] ch, int start, int length) throws SAXException {
+			public void characters(char[] ch, int start, int length) {
 				if (statusTag) {
 					res.setStatus(new String(ch, start, length));
 					statusTag = false;
@@ -161,5 +162,14 @@ public class NagiosCheckSenderImpl implements NagiosCheckSender {
 			throw new SAXException("Failed to get response status and message");
 		}
 		return res;
+	}
+
+	public void shutdown() {
+		try {
+			httpClient.close();
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }
